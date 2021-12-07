@@ -22,24 +22,30 @@ def print_error(err):
 
 
 def usage():
-    print('Usage:\t{0} [-p password] [--] archive'.format(sys.argv[0]))
+    print('Usage:\t{0} [-p password] [-o output] [--] archive'
+          .format(sys.argv[0]))
 
 
 try:
     opts, args = getopt.getopt(sys.argv[1:],
-                               'hp:',
-                               ['help', 'password='])
+                               'ho:p:',
+                               ['help', 'output=', 'password='])
 except getopt.GetoptError as err:
     print_error(err)
 
 password = None
+output = None
 
 for o, a in opts:
     if o in ('-p', '--password'):
         password = a
+    elif o in ('-o', '--output'):
+        output = a
     elif o in ('-h', '-?', '--help', '--usage'):
         usage()
-        print('Help:\t-p, --password: password\n\t-h, --help: print help.')
+        print("""Help:\t-p, --password: password
+\t-o, --output: output directory (default: archive name)
+\t-h, --help: print help.""")
         exit()
     else:
         assert False, 'unhandled option'
@@ -49,10 +55,11 @@ if len(args) < 1:
 
 name = args[0]
 
-directory = os.path.splitext(os.path.basename(name))[0]
+if output is None:
+    output = os.path.splitext(os.path.basename(name))[0]
 
-if not os.path.exists(directory):
-    os.makedirs(directory)
+if not os.path.exists(output):
+    os.makedirs(output)
 
 with ZipFile(name, 'r') as z:
     if password:
@@ -70,7 +77,7 @@ with ZipFile(name, 'r') as z:
         # need to print repr in Python 2 as we may encounter UnicodeEncodeError
         # when printing to a Windows console
         print(repr(uf))
-        filename = os.path.join(directory, uf)
+        filename = os.path.join(output, uf)
         # create directories if necessary
         if not os.path.exists(os.path.dirname(filename)):
             try:
