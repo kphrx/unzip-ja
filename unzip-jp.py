@@ -11,7 +11,6 @@ from zipfile import ZipFile
 import sys
 import os
 import errno
-import codecs
 import getopt
 
 
@@ -65,15 +64,19 @@ with ZipFile(name, 'r') as z:
     if password:
         z.setpassword(password.encode('cp850', 'replace'))
     for f in z.infolist():
-        bad_filename = f.filename
-        if bytes != str:
-            # Python 3 - decode filename into bytes
-            # assume CP437 - these zip files were from Windows anyway
-            bad_filename = bytes(bad_filename, 'cp437')
+        # Python 3 - decode filename into bytes
+        # assume CP437 - these zip files were from Windows anyway
         try:
-            uf = codecs.decode(bad_filename, 'sjis')
+            bad_filename = f.filename.encode('cp437')
+        except UnicodeDecodeError:
+            bad_filename = f.filename
+        except UnicodeEncodeError:
+            z.extract(f, output)
+            continue
+        try:
+            uf = bad_filename.decode('sjis')
         except ValueError:
-            uf = codecs.decode(bad_filename, 'shift_jisx0213')
+            uf = bad_filename.decode('shift_jisx0213')
         # need to print repr in Python 2 as we may encounter UnicodeEncodeError
         # when printing to a Windows console
         print(repr(uf))
