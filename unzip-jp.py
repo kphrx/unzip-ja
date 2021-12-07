@@ -10,7 +10,6 @@
 from zipfile import ZipFile
 import sys
 import os
-import errno
 import getopt
 
 
@@ -57,9 +56,6 @@ name = args[0]
 if output is None:
     output = os.path.splitext(os.path.basename(name))[0]
 
-if not os.path.exists(output):
-    os.makedirs(output)
-
 with ZipFile(name, 'r') as z:
     if password:
         z.setpassword(password.encode('cp850', 'replace'))
@@ -80,16 +76,6 @@ with ZipFile(name, 'r') as z:
         # need to print repr in Python 2 as we may encounter UnicodeEncodeError
         # when printing to a Windows console
         print(repr(uf))
-        filename = os.path.join(output, uf)
-        # create directories if necessary
-        if not os.path.exists(os.path.dirname(filename)):
-            try:
-                os.makedirs(os.path.dirname(filename))
-            except OSError as exc:  # Guard against race condition
-                if exc.errno != errno.EEXIST:
-                    raise
-        # don't try to write to directories
-        if not filename.endswith('/'):
-            with open(filename, 'wb') as dest:
-                dest.write(z.read(f))
+        f.filename = uf
+        z.extract(f, output)
 
